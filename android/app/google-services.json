@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "354558851311",
+    "project_id": "ultima-tanda-u-94678",
+    "storage_bucket": "ultima-tanda-u-94678.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:354558851311:android:cbbbc5185639225cbcc31a",
+        "android_client_info": {
+          "package_name": "com.ultimatanda.ultima_tanda"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDQrSkBUBEbWa0J35G7DhIZGI74WQBjXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

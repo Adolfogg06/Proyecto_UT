@@ -1,0 +1,39 @@
+name: ultima_tanda
+description: "Última Tanda - Marketplace de comida sobrante a precio reducido (Guatemala/CA)"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Firebase
+  firebase_core: ^4.14.0
+  firebase_auth: ^6.6.1
+  cloud_firestore: ^6.9.0
+  firebase_storage: ^13.5.0
+
+  # State management
+  provider: ^6.1.5+1
+
+  # Maps & location
+  google_maps_flutter: ^2.18.0
+  geolocator: ^14.0.3
+
+  # Utils
+  intl: ^0.20.3
+  cached_network_image: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

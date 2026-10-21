@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // ---------------- users ----------------
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid)
+        // no permitir que el usuario se auto-otorgue otro rol
+        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['totalSavedQ', 'totalKgRescued', 'totalOrders']));
+      allow delete: if false;
+    }
+
+    // ---------------- baskets ----------------
+    match /baskets/{basketId} {
+      allow read: if true;
+      allow create: if isSignedIn() && role() == 'comercio'
+        && request.resource.data.merchantId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        // el comercio dueño puede editar su canasta
+        resource.data.merchantId == request.auth.uid
+        // o un consumidor reservando: solo puede bajar quantityAvailable / cambiar status
+        || request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['quantityAvailable', 'status'])
+      );
+      allow delete: if isSignedIn() && resource.data.merchantId == request.auth.uid;
+    }
+
+    // ---------------- reservations ----------------
+    match /reservations/{reservationId} {
+      allow read: if isSignedIn() && (
+        resource.data.consumerId == request.auth.uid
+        || resource.data.merchantId == request.auth.uid
+      );
+      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.merchantId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    // ---------------- donations ----------------
+    match /donations/{donationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.merchantId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---------------- ngos (catálogo, solo lectura desde la app) ----------------
+    match /ngos/{ngoId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
