@@ -48,9 +48,23 @@ service cloud.firestore {
         || resource.data.merchantId == request.auth.uid
       );
       allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.merchantId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && (
+        // el comercio puede cambiar el estado de su reserva
+        resource.data.merchantId == request.auth.uid
+        // o el consumidor confirma su propia recogida con el deslizador antifraude
+        || (resource.data.consumerId == request.auth.uid
+            && resource.data.status == 'confirmed'
+            && request.resource.data.status == 'picked_up')
+      );
       allow delete: if false;
+    }
+
+    // ---------------- favorites ----------------
+    match /favorites/{favoriteId} {
+      allow read: if isSignedIn() && resource.data.consumerId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.consumerId == request.auth.uid;
+      allow update: if false;
     }
 
     // ---------------- donations ----------------

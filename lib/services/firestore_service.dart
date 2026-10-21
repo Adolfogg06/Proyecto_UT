@@ -50,6 +50,38 @@ class FirestoreService {
         .update({'status': status.value});
   }
 
+  // ---------------- Favorites ----------------
+
+  String _favoriteDocId(String consumerId, String basketId) => '${consumerId}_$basketId';
+
+  /// IDs de canastas marcadas como favoritas por [consumerId], en tiempo real.
+  Stream<Set<String>> favoriteBasketIdsStream(String consumerId) {
+    return _db
+        .collection(FirestoreCollections.favorites)
+        .where('consumerId', isEqualTo: consumerId)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()['basketId'] as String).toSet());
+  }
+
+  Future<void> toggleFavorite({
+    required String consumerId,
+    required String basketId,
+    required bool isFavorite,
+  }) async {
+    final ref = _db
+        .collection(FirestoreCollections.favorites)
+        .doc(_favoriteDocId(consumerId, basketId));
+    if (isFavorite) {
+      await ref.delete();
+    } else {
+      await ref.set({
+        'consumerId': consumerId,
+        'basketId': basketId,
+        'createdAt': Timestamp.now(),
+      });
+    }
+  }
+
   /// Distancia en km entre dos puntos (fórmula de Haversine), usada para
   /// filtrar canastas cercanas sin depender de índices geoespaciales.
   static double distanceKm(GeoPoint a, GeoPoint b) {

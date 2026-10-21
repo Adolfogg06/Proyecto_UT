@@ -15,6 +15,10 @@ class AppUser {
   final GeoPoint? businessLocation;
   final String businessPhotoUrl;
 
+  /// Calificación del comercio (0 hasta que exista un sistema de reseñas).
+  final double businessRating;
+  final int businessReviewCount;
+
   // Solo consumidor — índice de impacto acumulado
   final double totalSavedQ;
   final double totalKgRescued;
@@ -31,6 +35,8 @@ class AppUser {
     this.businessAddress = '',
     this.businessLocation,
     this.businessPhotoUrl = '',
+    this.businessRating = 0,
+    this.businessReviewCount = 0,
     this.totalSavedQ = 0,
     this.totalKgRescued = 0,
     this.totalOrders = 0,
@@ -48,6 +54,8 @@ class AppUser {
       businessAddress: map['businessAddress'] ?? '',
       businessLocation: map['businessLocation'] as GeoPoint?,
       businessPhotoUrl: map['businessPhotoUrl'] ?? '',
+      businessRating: (map['businessRating'] ?? 0).toDouble(),
+      businessReviewCount: (map['businessReviewCount'] ?? 0) as int,
       totalSavedQ: (map['totalSavedQ'] ?? 0).toDouble(),
       totalKgRescued: (map['totalKgRescued'] ?? 0).toDouble(),
       totalOrders: (map['totalOrders'] ?? 0) as int,
@@ -65,6 +73,8 @@ class AppUser {
       'businessAddress': businessAddress,
       'businessLocation': businessLocation,
       'businessPhotoUrl': businessPhotoUrl,
+      'businessRating': businessRating,
+      'businessReviewCount': businessReviewCount,
       'totalSavedQ': totalSavedQ,
       'totalKgRescued': totalKgRescued,
       'totalOrders': totalOrders,

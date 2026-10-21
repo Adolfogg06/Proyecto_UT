@@ -31,6 +31,37 @@ class DiscountTier {
   }
 }
 
+/// Métricas de calidad del comercio, calculadas a partir de reseñas
+/// post-recogida. En 0 mientras no exista ninguna reseña (todavía no hay
+/// pantalla para dejarlas) — la UI debe ocultar el bloque si [reviewCount]
+/// del comercio es 0, en vez de mostrar un cero engañoso.
+class QualityMetrics {
+  final double servicePercent;
+  final double quantityPercent;
+  final double qualityScore;
+
+  const QualityMetrics({
+    this.servicePercent = 0,
+    this.quantityPercent = 0,
+    this.qualityScore = 0,
+  });
+
+  factory QualityMetrics.fromMap(Map<String, dynamic>? map) {
+    if (map == null) return const QualityMetrics();
+    return QualityMetrics(
+      servicePercent: (map['servicePercent'] ?? 0).toDouble(),
+      quantityPercent: (map['quantityPercent'] ?? 0).toDouble(),
+      qualityScore: (map['qualityScore'] ?? 0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'servicePercent': servicePercent,
+        'quantityPercent': quantityPercent,
+        'qualityScore': qualityScore,
+      };
+}
+
 class Basket {
   final String id;
   final String merchantId;
@@ -56,6 +87,17 @@ class Basket {
   final BasketStatus status;
   final DateTime createdAt;
 
+  /// Calificación del comercio y nº de reseñas, copiados del perfil del
+  /// comercio al momento de publicar (mismo patrón que [merchantName]).
+  /// En 0 hasta que exista un sistema de reseñas real.
+  final double merchantRating;
+  final int merchantReviewCount;
+  final QualityMetrics qualityMetrics;
+
+  /// Ejemplos de productos que puede incluir la canasta, escritos por el
+  /// comercio al publicar (p. ej. "Pan de masa madre", "Croissants").
+  final List<String> includes;
+
   Basket({
     required this.id,
     required this.merchantId,
@@ -76,6 +118,10 @@ class Basket {
     this.address = '',
     this.status = BasketStatus.active,
     DateTime? createdAt,
+    this.merchantRating = 0,
+    this.merchantReviewCount = 0,
+    this.qualityMetrics = const QualityMetrics(),
+    this.includes = const [],
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory Basket.fromMap(String id, Map<String, dynamic> map) {
@@ -102,6 +148,12 @@ class Basket {
       address: map['address'] ?? '',
       status: BasketStatusX.fromValue(map['status'] ?? 'active'),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      merchantRating: (map['merchantRating'] ?? 0).toDouble(),
+      merchantReviewCount: (map['merchantReviewCount'] ?? 0) as int,
+      qualityMetrics: QualityMetrics.fromMap(
+        map['qualityMetrics'] as Map<String, dynamic>?,
+      ),
+      includes: ((map['includes'] ?? []) as List).map((e) => e.toString()).toList(),
     );
   }
 
@@ -125,6 +177,10 @@ class Basket {
       'address': address,
       'status': status.value,
       'createdAt': Timestamp.fromDate(createdAt),
+      'merchantRating': merchantRating,
+      'merchantReviewCount': merchantReviewCount,
+      'qualityMetrics': qualityMetrics.toMap(),
+      'includes': includes,
     };
   }
 

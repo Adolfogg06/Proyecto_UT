@@ -17,6 +17,8 @@ seed/serviceAccountKey.json
 functions/node_modules/
 .firebase/
 firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
 # Google Maps API key files si se separan del manifest
 android/app/src/main/res/values/google_maps_api.xml

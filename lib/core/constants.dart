@@ -15,6 +15,7 @@ class FirestoreCollections {
   static const reservations = 'reservations';
   static const donations = 'donations';
   static const ngos = 'ngos';
+  static const favorites = 'favorites';
 }
 
 enum UserRole { comercio, consumidor }

@@ -22,6 +22,7 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
   final _minPriceCtrl = TextEditingController();
   final _unitCostCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController(text: '20');
+  final _includesCtrl = TextEditingController();
 
   BasketType _type = BasketType.visible;
   TimeOfDay _pickupStart = const TimeOfDay(hour: 19, minute: 0);
@@ -41,6 +42,7 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
     _originalPriceCtrl.dispose();
     _minPriceCtrl.dispose();
     _unitCostCtrl.dispose();
+    _includesCtrl.dispose();
     _quantityCtrl.dispose();
     super.dispose();
   }
@@ -103,6 +105,13 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
             .toList(),
         location: location,
         address: user.businessAddress,
+        merchantRating: user.businessRating,
+        merchantReviewCount: user.businessReviewCount,
+        includes: _includesCtrl.text
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
       );
 
       await merchantProvider.createBasket(basket);
@@ -146,6 +155,15 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
                   controller: _descriptionCtrl,
                   maxLines: 2,
                   decoration: const InputDecoration(labelText: 'Descripción (opcional)'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _includesCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Qué puede incluir (opcional)',
+                    hintText: 'Pan de masa madre, Croissants, Galletas',
+                    helperText: 'Sepáralo con comas — se muestra como lista al consumidor',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const Text('Tipo de canasta', style: TextStyle(fontWeight: FontWeight.bold)),

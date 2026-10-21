@@ -5,6 +5,8 @@ import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/consumer/consumer_shell.dart';
 import 'screens/merchant/merchant_shell.dart';
+import 'ui_v2/redesign_flag.dart';
+import 'ui_v2/theme/tanda_theme.dart';
 
 class UltimaTandaApp extends StatelessWidget {
   const UltimaTandaApp({super.key});
@@ -16,7 +18,9 @@ class UltimaTandaApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Última Tanda',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
+        theme: kUseRedesign ? TandaTheme.light() : AppTheme.light(),
+        darkTheme: kUseRedesign ? TandaTheme.dark() : null,
+        themeMode: kUseRedesign ? ThemeMode.system : ThemeMode.light,
         home: const _AuthGate(),
       ),
     );
