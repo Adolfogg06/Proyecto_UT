@@ -24,6 +24,9 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
   final _quantityCtrl = TextEditingController(text: '20');
   final _includesCtrl = TextEditingController();
 
+  static const _categories = ['Panadería', 'Restaurante', 'Supermercado', 'Pastelería', 'Vegano', 'Otro'];
+  String _category = _categories.first;
+
   BasketType _type = BasketType.visible;
   TimeOfDay _pickupStart = const TimeOfDay(hour: 19, minute: 0);
   TimeOfDay _pickupEnd = const TimeOfDay(hour: 21, minute: 0);
@@ -107,6 +110,7 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
         address: user.businessAddress,
         merchantRating: user.businessRating,
         merchantReviewCount: user.businessReviewCount,
+        category: _category,
         includes: _includesCtrl.text
             .split(',')
             .map((s) => s.trim())
@@ -164,6 +168,15 @@ class _CreateBasketScreenState extends State<CreateBasketScreen> {
                     hintText: 'Pan de masa madre, Croissants, Galletas',
                     helperText: 'Sepáralo con comas — se muestra como lista al consumidor',
                   ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _category,
+                  decoration: const InputDecoration(labelText: 'Categoría'),
+                  items: _categories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _category = v ?? _category),
                 ),
                 const SizedBox(height: 12),
                 const Text('Tipo de canasta', style: TextStyle(fontWeight: FontWeight.bold)),

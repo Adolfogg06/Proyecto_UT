@@ -62,6 +62,20 @@ class ReservationProvider extends ChangeNotifier {
     }
   }
 
+  /// Confirma la recogida (deslizador antifraude) — solo válido mientras la
+  /// reserva esté `confirmed`, según la regla de seguridad del lado del
+  /// servidor.
+  Future<bool> markPickedUp(String reservationId) async {
+    try {
+      await _firestoreService.markPickedUp(reservationId);
+      return true;
+    } catch (e) {
+      errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _sub?.cancel();

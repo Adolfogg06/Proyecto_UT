@@ -28,8 +28,7 @@ dependencies:
   intl: ^0.20.3
   cached_network_image: ^4.0.0
   google_fonts: ^9.0.0
-  lucide_icons: ^0.257.0
-
+  lucide_icons_flutter: ^4.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

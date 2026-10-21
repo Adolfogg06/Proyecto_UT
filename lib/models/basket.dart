@@ -98,6 +98,11 @@ class Basket {
   /// comercio al publicar (p. ej. "Pan de masa madre", "Croissants").
   final List<String> includes;
 
+  /// Categoría libre del comercio (p. ej. "Panadería", "Vegano"). Alimenta
+  /// los chips de filtro de Inicio — se derivan de las categorías realmente
+  /// presentes en los datos, no de una lista fija.
+  final String category;
+
   Basket({
     required this.id,
     required this.merchantId,
@@ -122,6 +127,7 @@ class Basket {
     this.merchantReviewCount = 0,
     this.qualityMetrics = const QualityMetrics(),
     this.includes = const [],
+    this.category = '',
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory Basket.fromMap(String id, Map<String, dynamic> map) {
@@ -154,6 +160,7 @@ class Basket {
         map['qualityMetrics'] as Map<String, dynamic>?,
       ),
       includes: ((map['includes'] ?? []) as List).map((e) => e.toString()).toList(),
+      category: map['category'] ?? '',
     );
   }
 
@@ -181,6 +188,7 @@ class Basket {
       'merchantReviewCount': merchantReviewCount,
       'qualityMetrics': qualityMetrics.toMap(),
       'includes': includes,
+      'category': category,
     };
   }
 
