@@ -10,6 +10,7 @@ import '../../widgets/countdown_price_widget.dart';
 import '../../widgets/stat_tile.dart';
 import '../shared/solidarity_donation_screen.dart';
 import 'create_basket_screen.dart';
+import 'microeconomics_screen.dart';
 
 class MerchantHomeScreen extends StatelessWidget {
   const MerchantHomeScreen({super.key});
@@ -23,6 +24,18 @@ class MerchantHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Panel del comercio'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: 'Panel de microeconomía',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChangeNotifierProvider.value(
+                  value: provider,
+                  child: const MicroeconomicsScreen(),
+                ),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Cerrar sesión',

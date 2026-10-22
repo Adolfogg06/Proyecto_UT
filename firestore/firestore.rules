@@ -67,6 +67,11 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------------- costSettings (panel de microeconomía, solo comercio) ----------------
+    match /costSettings/{uid} {
+      allow read, write: if isOwner(uid) && role() == 'comercio';
+    }
+
     // ---------------- donations ----------------
     match /donations/{donationId} {
       allow read: if isSignedIn();

@@ -198,6 +198,26 @@ class FirestoreService {
     return List.generate(4, (_) => rand.nextInt(10)).join();
   }
 
+  // ---------------- Cost settings (panel de microeconomía) ----------------
+
+  /// Costo fijo mensual que el propio comercio ingresa (0 si nunca lo ha
+  /// configurado). El resto de las curvas de corto plazo se derivan de sus
+  /// canastas y reservas reales, no de este documento.
+  Stream<double> fixedCostMonthlyStream(String merchantId) {
+    return _db
+        .collection(FirestoreCollections.costSettings)
+        .doc(merchantId)
+        .snapshots()
+        .map((snap) => (snap.data()?['fixedCostMonthly'] ?? 0).toDouble());
+  }
+
+  Future<void> setFixedCostMonthly(String merchantId, double amount) {
+    return _db
+        .collection(FirestoreCollections.costSettings)
+        .doc(merchantId)
+        .set({'fixedCostMonthly': amount});
+  }
+
   // ---------------- Donations (rescate solidario) ----------------
 
   Stream<List<Ngo>> ngosStream() {

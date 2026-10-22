@@ -12,9 +12,11 @@ class MerchantProvider extends ChangeNotifier {
 
   StreamSubscription<List<Basket>>? _basketsSub;
   StreamSubscription<List<Reservation>>? _reservationsSub;
+  StreamSubscription<double>? _fixedCostSub;
 
   List<Basket> baskets = [];
   List<Reservation> reservations = [];
+  double fixedCostMonthly = 0;
   bool isLoading = true;
 
   MerchantProvider(this.merchantId) {
@@ -28,7 +30,61 @@ class MerchantProvider extends ChangeNotifier {
       reservations = r;
       notifyListeners();
     });
+    _fixedCostSub = _firestoreService.fixedCostMonthlyStream(merchantId).listen((v) {
+      fixedCostMonthly = v;
+      notifyListeners();
+    });
   }
+
+  Future<void> setFixedCostMonthly(double amount) =>
+      _firestoreService.setFixedCostMonthly(merchantId, amount);
+
+  // -------- Microeconomía de corto plazo, derivada de datos reales --------
+
+  /// Costo variable unitario (CV): promedio del costo unitario que el
+  /// comercio declaró al publicar cada canasta. 0 si nunca lo ha llenado.
+  double get avgUnitCost {
+    final withCost = baskets.where((b) => b.unitCost > 0).toList();
+    if (withCost.isEmpty) return 0;
+    return withCost.fold(0.0, (sum, b) => sum + b.unitCost) / withCost.length;
+  }
+
+  /// Precio de venta promedio. Si ya hay ventas reales, usa el precio
+  /// efectivamente cobrado (más honesto); si no, cae al precio de lista de
+  /// sus canastas activas como estimado — [sellPriceIsEstimate] lo señala.
+  double get avgSellPrice {
+    if (reservations.isNotEmpty) {
+      return reservations.fold(0.0, (sum, r) => sum + r.unitPriceAtReservation) /
+          reservations.length;
+    }
+    final active = baskets.where((b) => b.originalPrice > 0).toList();
+    if (active.isEmpty) return 0;
+    return active.fold(0.0, (sum, b) => sum + b.originalPrice) / active.length;
+  }
+
+  bool get sellPriceIsEstimate => reservations.isEmpty;
+
+  /// Margen de contribución (Precio − CV). Si es 0 o negativo, el negocio
+  /// nunca cubre sus costos fijos sin importar cuánto venda.
+  double get contributionMargin => avgSellPrice - avgUnitCost;
+
+  /// Punto de equilibrio en unidades: CF / (Precio − CV). Null si el margen
+  /// de contribución no es positivo (no hay equilibrio posible).
+  double? get breakEvenUnits {
+    if (contributionMargin <= 0) return null;
+    return fixedCostMonthly / contributionMargin;
+  }
+
+  double totalCostAt(double q) => fixedCostMonthly + avgUnitCost * q;
+  double totalRevenueAt(double q) => avgSellPrice * q;
+
+  /// Costo medio (CMe) en q unidades. Null si q es 0 (indefinido).
+  double? avgCostAt(double q) => q > 0 ? totalCostAt(q) / q : null;
+
+  /// Costo marginal (CMg): con el dato real disponible (costo unitario fijo
+  /// por canasta) el costo de producir una unidad más es constante — por
+  /// eso CMg = CV en este modelo de corto plazo.
+  double get marginalCost => avgUnitCost;
 
   List<Basket> get activeBaskets =>
       baskets.where((b) => b.status == BasketStatus.active).toList();
@@ -54,6 +110,7 @@ class MerchantProvider extends ChangeNotifier {
   void dispose() {
     _basketsSub?.cancel();
     _reservationsSub?.cancel();
+    _fixedCostSub?.cancel();
     super.dispose();
   }
 }
