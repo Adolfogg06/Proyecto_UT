@@ -81,6 +81,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Text('¿Cómo quieres usar Última Tanda?', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 RoleSelector(selected: _role, onChanged: (r) => setState(() => _role = r)),
+                if (isComercio) ...[
+                  const SizedBox(height: 12),
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        'Las cuentas de comercio quedan pendientes de revision. Podras publicar ofertas despues de la aprobacion.',
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _nameCtrl,

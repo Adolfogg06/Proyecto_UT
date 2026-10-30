@@ -86,6 +86,8 @@ class Basket {
   final String address;
   final BasketStatus status;
   final DateTime createdAt;
+  final String lastReservationId;
+  final String lastDonationId;
 
   /// Calificación del comercio y nº de reseñas, copiados del perfil del
   /// comercio al momento de publicar (mismo patrón que [merchantName]).
@@ -123,6 +125,8 @@ class Basket {
     this.address = '',
     this.status = BasketStatus.active,
     DateTime? createdAt,
+    this.lastReservationId = '',
+    this.lastDonationId = '',
     this.merchantRating = 0,
     this.merchantReviewCount = 0,
     this.qualityMetrics = const QualityMetrics(),
@@ -154,6 +158,8 @@ class Basket {
       address: map['address'] ?? '',
       status: BasketStatusX.fromValue(map['status'] ?? 'active'),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lastReservationId: map['lastReservationId'] ?? '',
+      lastDonationId: map['lastDonationId'] ?? '',
       merchantRating: (map['merchantRating'] ?? 0).toDouble(),
       merchantReviewCount: (map['merchantReviewCount'] ?? 0) as int,
       qualityMetrics: QualityMetrics.fromMap(
@@ -184,6 +190,8 @@ class Basket {
       'address': address,
       'status': status.value,
       'createdAt': Timestamp.fromDate(createdAt),
+      'lastReservationId': lastReservationId,
+      'lastDonationId': lastDonationId,
       'merchantRating': merchantRating,
       'merchantReviewCount': merchantReviewCount,
       'qualityMetrics': qualityMetrics.toMap(),

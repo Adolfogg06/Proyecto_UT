@@ -13,7 +13,10 @@ Future<void> main() async {
   await initializeDateFormatting('es');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  if (kDebugMode) {
+  // Enable locally with --dart-define=USE_FIREBASE_EMULATORS=true.
+  const useFirebaseEmulators =
+      bool.fromEnvironment('USE_FIREBASE_EMULATORS', defaultValue: false);
+  if (kDebugMode && useFirebaseEmulators) {
     // 10.0.2.2 is the Android emulator's alias for the host machine's localhost.
     final host = defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost';
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);

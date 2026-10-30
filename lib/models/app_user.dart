@@ -5,6 +5,7 @@ class AppUser {
   final String uid;
   final String email;
   final UserRole role;
+  final String accountStatus;
   final String displayName;
   final String phone;
   final DateTime createdAt;
@@ -28,6 +29,7 @@ class AppUser {
     required this.uid,
     required this.email,
     required this.role,
+    this.accountStatus = 'approved',
     required this.displayName,
     this.phone = '',
     DateTime? createdAt,
@@ -47,6 +49,8 @@ class AppUser {
       uid: uid,
       email: map['email'] ?? '',
       role: UserRoleX.fromValue(map['role'] ?? 'consumidor'),
+      // Legacy demo merchant profiles predate review status; keep them usable.
+      accountStatus: map['accountStatus'] ?? 'approved',
       displayName: map['displayName'] ?? '',
       phone: map['phone'] ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -66,6 +70,7 @@ class AppUser {
     return {
       'email': email,
       'role': role.value,
+      'accountStatus': accountStatus,
       'displayName': displayName,
       'phone': phone,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -82,4 +87,7 @@ class AppUser {
   }
 
   bool get isComercio => role == UserRole.comercio;
+  bool get isAdmin => role == UserRole.admin;
+  bool get isMerchantPending => isComercio && accountStatus == 'pending';
+  bool get isMerchantRejected => isComercio && accountStatus == 'rejected';
 }

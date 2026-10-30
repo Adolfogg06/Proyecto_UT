@@ -22,3 +22,7 @@ ui-debug.log
 
 # Google Maps API key files si se separan del manifest
 android/app/src/main/res/values/google_maps_api.xml
+
+# Builds locales y material de demo (no van en control de versiones)
+apk_release/
+demo_videos/

@@ -3,10 +3,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/constants.dart';
 import '../models/basket.dart';
 import '../models/donation.dart';
+import '../models/app_user.dart';
 import '../models/reservation.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Stream<List<AppUser>> pendingMerchantApplicationsStream() {
+    return _db
+        .collection(FirestoreCollections.users)
+        .where('role', isEqualTo: 'comercio')
+        .where('accountStatus', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => AppUser.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> reviewMerchantApplication({
+    required String merchantId,
+    required String adminId,
+    required bool approve,
+  }) {
+    return _db.collection(FirestoreCollections.users).doc(merchantId).update({
+      'accountStatus': approve ? 'approved' : 'rejected',
+      'reviewedAt': Timestamp.now(),
+      'reviewedBy': adminId,
+    });
+  }
 
   // ---------------- Baskets (canastas) ----------------
 
@@ -170,17 +194,11 @@ class FirestoreService {
       final newAvailable = available - quantity;
       tx.update(basketRef, {
         'quantityAvailable': newAvailable,
+        'lastReservationId': reservationRef.id,
         if (newAvailable <= 0) 'status': BasketStatus.soldOut.value,
       });
       tx.set(reservationRef, reservation.toMap());
 
-      final userRef =
-          _db.collection(FirestoreCollections.users).doc(consumerId);
-      tx.update(userRef, {
-        'totalSavedQ': FieldValue.increment(reservation.totalSaved),
-        'totalKgRescued': FieldValue.increment(quantity * 0.35),
-        'totalOrders': FieldValue.increment(1),
-      });
     });
 
     return reservation;
@@ -194,7 +212,7 @@ class FirestoreService {
   }
 
   String _generatePickupCode() {
-    final rand = Random();
+    final rand = Random.secure();
     return List.generate(4, (_) => rand.nextInt(10)).join();
   }
 
@@ -251,6 +269,7 @@ class FirestoreService {
       tx.update(basketRef, {
         'status': BasketStatus.donated.value,
         'quantityAvailable': 0,
+        'lastDonationId': donationRef.id,
       });
       tx.set(donationRef, donation.toMap());
     });

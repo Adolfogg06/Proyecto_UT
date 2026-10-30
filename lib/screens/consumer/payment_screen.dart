@@ -53,7 +53,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final provider = context.watch<ReservationProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pago')),
+      appBar: AppBar(title: const Text('Confirmar reserva')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -71,7 +71,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       _row('Cantidad', '${widget.quantity}'),
                       _row('Precio unitario', currency.format(unitPrice)),
                       const Divider(),
-                      _row('Total a pagar', currency.format(total), bold: true),
+                      _row('Total de referencia', currency.format(total), bold: true),
                     ],
                   ),
                 ),
@@ -94,20 +94,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
               const Spacer(),
-              if (_method != PaymentMethod.efectivoAlRecoger)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Pago simulado: en este prototipo no se procesa un cobro real.',
-                    style: TextStyle(fontSize: 11, color: Colors.black45),
-                    textAlign: TextAlign.center,
-                  ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Prototipo: no se procesa ningun cobro. La forma de pago solo se guarda como ejemplo.',
+                  style: TextStyle(fontSize: 11, color: Colors.black45),
+                  textAlign: TextAlign.center,
                 ),
+              ),
               ElevatedButton(
                 onPressed: provider.isSubmitting ? null : _confirm,
                 child: provider.isSubmitting
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('Confirmar y pagar ${currency.format(total)}'),
+                    : const Text('Confirmar reserva'),
               ),
             ],
           ),

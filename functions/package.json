@@ -1,7 +1,7 @@
 {
   "name": "ultima-tanda-functions",
   "description": "Cloud Functions opcionales para Última Tanda",
-  "engines": { "node": "18" },
+  "engines": { "node": "22" },
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^13.0.0",

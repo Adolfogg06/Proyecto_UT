@@ -29,6 +29,7 @@ class AuthService {
       uid: uid,
       email: email,
       role: role,
+      accountStatus: role == UserRole.comercio ? 'pending' : 'approved',
       displayName: displayName,
       businessName: businessName,
       businessAddress: businessAddress,

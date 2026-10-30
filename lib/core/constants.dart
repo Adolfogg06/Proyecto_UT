@@ -19,7 +19,7 @@ class FirestoreCollections {
   static const costSettings = 'costSettings';
 }
 
-enum UserRole { comercio, consumidor }
+enum UserRole { comercio, consumidor, admin }
 
 enum BasketType { visible, sorpresa }
 
@@ -30,11 +30,38 @@ enum PaymentMethod { qrBancario, billeteraDigital, efectivoAlRecoger }
 enum ReservationStatus { pending, confirmed, pickedUp, cancelled }
 
 extension UserRoleX on UserRole {
-  String get label => this == UserRole.comercio ? 'Comercio' : 'Consumidor';
-  String get value => this == UserRole.comercio ? 'comercio' : 'consumidor';
+  String get label {
+    switch (this) {
+      case UserRole.comercio:
+        return 'Comercio';
+      case UserRole.consumidor:
+        return 'Consumidor';
+      case UserRole.admin:
+        return 'Administrador';
+    }
+  }
 
-  static UserRole fromValue(String v) =>
-      v == 'comercio' ? UserRole.comercio : UserRole.consumidor;
+  String get value {
+    switch (this) {
+      case UserRole.comercio:
+        return 'comercio';
+      case UserRole.consumidor:
+        return 'consumidor';
+      case UserRole.admin:
+        return 'admin';
+    }
+  }
+
+  static UserRole fromValue(String v) {
+    switch (v) {
+      case 'comercio':
+        return UserRole.comercio;
+      case 'admin':
+        return UserRole.admin;
+      default:
+        return UserRole.consumidor;
+    }
+  }
 }
 
 extension BasketTypeX on BasketType {

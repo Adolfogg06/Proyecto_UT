@@ -15,28 +15,89 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+
+    function isApprovedMerchant() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'comercio'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountStatus', 'approved') == 'approved';
+    }
+
     // ---------------- users ----------------
     match /users/{uid} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid)
-        // no permitir que el usuario se auto-otorgue otro rol
-        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['totalSavedQ', 'totalKgRescued', 'totalOrders']));
+      // El cliente solo necesita ver el perfil público mínimo del comercio;
+      // datos personales y de impacto son privados para el dueño.
+      allow read: if isOwner(uid)
+        || (isAdmin() && resource.data.role == 'comercio'
+            && resource.data.accountStatus == 'pending');
+      allow create: if isOwner(uid)
+        && request.resource.data.role in ['comercio', 'consumidor']
+        && ((request.resource.data.role == 'comercio'
+              && request.resource.data.accountStatus == 'pending')
+            || (request.resource.data.role == 'consumidor'
+              && request.resource.data.accountStatus == 'approved'))
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if (isOwner(uid)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.accountStatus == resource.data.accountStatus
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'phone', 'businessName', 'businessAddress',
+            'businessLocation', 'businessPhotoUrl'
+          ]))
+        || (isAdmin()
+          && resource.data.role == 'comercio'
+          && resource.data.accountStatus == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'accountStatus', 'reviewedAt', 'reviewedBy'
+          ])
+          && request.resource.data.accountStatus in ['approved', 'rejected']
+          && request.resource.data.reviewedBy == request.auth.uid);
       allow delete: if false;
     }
 
     // ---------------- baskets ----------------
     match /baskets/{basketId} {
       allow read: if true;
-      allow create: if isSignedIn() && role() == 'comercio'
-        && request.resource.data.merchantId == request.auth.uid;
+      allow create: if isApprovedMerchant()
+        && request.resource.data.merchantId == request.auth.uid
+        // validación de forma: precios y cantidades coherentes al publicar
+        && request.resource.data.originalPrice > 0
+        && request.resource.data.minPrice >= 0
+        && request.resource.data.minPrice <= request.resource.data.originalPrice
+        && request.resource.data.quantityTotal > 0
+        && request.resource.data.quantityAvailable == request.resource.data.quantityTotal
+        && request.resource.data.status == 'active';
       allow update: if isSignedIn() && (
-        // el comercio dueño puede editar su canasta
-        resource.data.merchantId == request.auth.uid
-        // o un consumidor reservando: solo puede bajar quantityAvailable / cambiar status
-        || request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['quantityAvailable', 'status'])
+        (isApprovedMerchant()
+          && resource.data.merchantId == request.auth.uid
+          && request.resource.data.merchantId == resource.data.merchantId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'description', 'photoUrl', 'type', 'originalPrice',
+            'minPrice', 'unitCost', 'pickupWindowStart', 'pickupWindowEnd',
+            'discountTiers', 'location', 'address', 'includes', 'category'
+          ]))
+        || (role() == 'consumidor'
+            && resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['quantityAvailable', 'status', 'lastReservationId'])
+            && request.resource.data.quantityAvailable >= 0
+            && request.resource.data.quantityAvailable < resource.data.quantityAvailable
+            && request.resource.data.lastReservationId is string
+            && request.resource.data.status == (request.resource.data.quantityAvailable == 0 ? 'sold_out' : 'active')
+            && getAfter(/databases/$(database)/documents/reservations/$(request.resource.data.lastReservationId)).data.basketId == basketId
+            && getAfter(/databases/$(database)/documents/reservations/$(request.resource.data.lastReservationId)).data.consumerId == request.auth.uid
+            && getAfter(/databases/$(database)/documents/reservations/$(request.resource.data.lastReservationId)).data.quantity == resource.data.quantityAvailable - request.resource.data.quantityAvailable)
+        || (isApprovedMerchant()
+            && resource.data.merchantId == request.auth.uid
+            && resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'quantityAvailable', 'lastDonationId'])
+            && request.resource.data.status == 'donated'
+            && request.resource.data.quantityAvailable == 0
+            && request.resource.data.lastDonationId is string
+            && getAfter(/databases/$(database)/documents/donations/$(request.resource.data.lastDonationId)).data.basketId == basketId
+            && getAfter(/databases/$(database)/documents/donations/$(request.resource.data.lastDonationId)).data.merchantId == request.auth.uid)
       );
       allow delete: if isSignedIn() && resource.data.merchantId == request.auth.uid;
     }
@@ -47,35 +108,62 @@ service cloud.firestore {
         resource.data.consumerId == request.auth.uid
         || resource.data.merchantId == request.auth.uid
       );
-      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
-      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && (
-        // el comercio puede cambiar el estado de su reserva
-        resource.data.merchantId == request.auth.uid
-        // o el consumidor confirma su propia recogida con el deslizador antifraude
-        || (resource.data.consumerId == request.auth.uid
-            && resource.data.status == 'confirmed'
-            && request.resource.data.status == 'picked_up')
-      );
+      allow create: if isSignedIn()
+        && role() == 'consumidor'
+        && request.resource.data.consumerId == request.auth.uid
+        && request.resource.data.quantity > 0
+        && request.resource.data.status == 'confirmed'
+        && request.resource.data.pickupCode is string
+        && request.resource.data.pickupCode.size() == 4
+        && request.resource.data.merchantId == get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.merchantId
+        && get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.status == 'active'
+        && request.resource.data.quantity <= get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.quantityAvailable
+        && request.resource.data.unitPriceAtReservation >= get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.minPrice
+        && request.resource.data.unitPriceAtReservation <= get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.originalPrice
+        // tolerancia de 1 centavo: evita rechazos por redondeo de punto
+        // flotante entre el cliente (Dart) y las reglas, sin dejar de
+        // bloquear montos inventados
+        && (request.resource.data.totalPrice - request.resource.data.unitPriceAtReservation * request.resource.data.quantity) < 0.01
+        && (request.resource.data.totalPrice - request.resource.data.unitPriceAtReservation * request.resource.data.quantity) > -0.01
+        && (request.resource.data.platformFee - request.resource.data.totalPrice * 0.15) < 0.01
+        && (request.resource.data.platformFee - request.resource.data.totalPrice * 0.15) > -0.01
+        && (request.resource.data.merchantNet - (request.resource.data.totalPrice - request.resource.data.platformFee)) < 0.01
+        && (request.resource.data.merchantNet - (request.resource.data.totalPrice - request.resource.data.platformFee)) > -0.01
+        && getAfter(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.lastReservationId == reservationId
+        && getAfter(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.quantityAvailable == get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.quantityAvailable - request.resource.data.quantity;
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && resource.data.status == 'confirmed'
+        && request.resource.data.status in ['picked_up', 'cancelled']
+        && ((resource.data.consumerId == request.auth.uid
+              && request.resource.data.status == 'picked_up')
+            || (resource.data.merchantId == request.auth.uid));
       allow delete: if false;
     }
 
     // ---------------- favorites ----------------
     match /favorites/{favoriteId} {
       allow read: if isSignedIn() && resource.data.consumerId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.consumerId == request.auth.uid
+        && request.resource.data.basketId is string;
       allow delete: if isSignedIn() && resource.data.consumerId == request.auth.uid;
       allow update: if false;
     }
 
     // ---------------- costSettings (panel de microeconomía, solo comercio) ----------------
     match /costSettings/{uid} {
-      allow read, write: if isOwner(uid) && role() == 'comercio';
+      allow read, write: if isOwner(uid) && isApprovedMerchant();
     }
 
     // ---------------- donations ----------------
     match /donations/{donationId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.merchantId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isApprovedMerchant()
+        && request.resource.data.merchantId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.lastDonationId == donationId
+        && getAfter(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.status == 'donated'
+        && request.resource.data.quantity <= get(/databases/$(database)/documents/baskets/$(request.resource.data.basketId)).data.quantityAvailable;
       allow update, delete: if false;
     }
 
